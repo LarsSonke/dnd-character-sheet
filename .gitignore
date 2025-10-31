@@ -1,0 +1,45 @@
+# Binaries
+dndcsg
+test-build
+
+# Go build artifacts
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool
+*.out
+coverage.out
+
+# Go workspace file
+go.work
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Log files
+*.log
+
+# SonarQube files
+sonar-project.properties
+.scannerwork/
+
+# Temporary files
+*.tmp
+*.temp
+
+# Patch files (keep exam_git_diff.patch)
+*.patch
+!exam_git_diff.patch
