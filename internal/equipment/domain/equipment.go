@@ -1,5 +1,7 @@
 package domain
 
+import "strings"
+
 // ArmorClass represents armor class statistics
 type ArmorClass struct {
 	Base     int  `json:"base"`
@@ -25,3 +27,32 @@ type EquipmentRepository interface {
 	// FindByCategory returns all equipment in a specific category
 	FindByCategory(category string) ([]Equipment, error)
 }
+
+// CalculateAC calculates the armor class with dexterity modifier according to D&D 5e armor rules
+func (e *Equipment) CalculateAC(dexModifier int) int {
+	ac := e.ArmorClass.Base
+	
+	if e.ArmorClass.DexBonus {
+		// Apply dex bonus based on armor category (D&D 5e rules)
+		switch strings.ToLower(e.Category) {
+		case "medium armor":
+			// Medium armor: max +2 dex bonus
+			if dexModifier > 2 {
+				ac += 2
+			} else {
+				ac += dexModifier
+			}
+		case "light armor":
+			// Light armor: full dex bonus
+			ac += dexModifier
+		case "heavy armor":
+			// Heavy armor: no dex bonus
+		default:
+			// Default: full dex bonus (for shields, etc.)
+			ac += dexModifier
+		}
+	}
+	
+	return ac
+}
+

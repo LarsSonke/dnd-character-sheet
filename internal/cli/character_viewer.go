@@ -69,7 +69,7 @@ func (c *ViewCommand) printCharacterInfo(char *domain.Character) {
 			default:
 				abilityName = "intelligence"
 			}
-			
+
 			fmt.Printf("Spellcasting ability: %s\n", abilityName)
 			fmt.Printf("Spell save DC: %d\n", char.SpellSaveDC())
 			fmt.Printf("Spell attack bonus: +%d\n", char.SpellAttackBonus())

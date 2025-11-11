@@ -184,6 +184,26 @@ func (c *Character) IsSpellcaster() bool {
 	return spellcasters[classLower]
 }
 
+// GetSpellSlots returns spell slots for the character based on class and level
+// D&D 5e rule: Different classes have different spell slot progressions
+func (c *Character) GetSpellSlots() map[int]int {
+	classLower := strings.ToLower(c.Class)
+	
+	switch classLower {
+	case "wizard", "cleric", "druid", "bard", "sorcerer":
+		slots := FullCasterSpellSlots(c.Level)
+		// Add cantrips (Level 0) for full casters
+		slots[0] = FullCasterCantrips(c.Level)
+		return slots
+	case "paladin", "ranger":
+		return HalfCasterSpellSlots(c.Level)
+	case "warlock":
+		return PactMagicSpellSlots(c.Level)
+	default:
+		return map[int]int{}
+	}
+}
+
 // Initiative calculates initiative bonus (Dex modifier + class bonuses)
 // D&D 5e rule: Initiative = Dex modifier, with class-specific bonuses
 func (c *Character) Initiative() int {
@@ -197,7 +217,7 @@ func (c *Character) Initiative() int {
 		if c.Level >= 2 {
 			initiative += c.ProficiencyBonus / 2
 		}
-	// Future: could add other class features like Feral Instinct for Barbarian
+		// Future: could add other class features like Feral Instinct for Barbarian
 	}
 
 	return initiative
@@ -240,3 +260,140 @@ func (c *Character) MaxHitPoints() int {
 
 	return totalHP
 }
+
+// Race represents a D&D 5e character race and its mechanical effects
+type Race struct {
+	Name string
+}
+
+// NewRace creates a new Race instance
+func NewRace(name string) *Race {
+	return &Race{Name: name}
+}
+
+// GetAbilityBonuses returns the ability score bonuses for this race according to D&D 5e rules
+func (r *Race) GetAbilityBonuses() map[string]int {
+	bonuses := make(map[string]int)
+	
+	switch strings.ToLower(r.Name) {
+	case "dwarf":
+		bonuses["con"] = 2
+	case "elf":
+		bonuses["dex"] = 2
+	case "halfling":
+		bonuses["dex"] = 2
+	case "lightfoot halfling":
+		bonuses["dex"] = 2
+		bonuses["cha"] = 1
+	case "stout halfling":
+		bonuses["dex"] = 2
+		bonuses["con"] = 1
+	case "human":
+		bonuses["str"] = 1
+		bonuses["dex"] = 1
+		bonuses["con"] = 1
+		bonuses["int"] = 1
+		bonuses["wis"] = 1
+		bonuses["cha"] = 1
+	case "dragonborn":
+		bonuses["str"] = 2
+		bonuses["cha"] = 1
+	case "gnome":
+		bonuses["int"] = 2
+	case "half elf":
+		bonuses["cha"] = 2
+	case "half orc":
+		bonuses["str"] = 2
+		bonuses["con"] = 1
+	case "tiefling":
+		bonuses["int"] = 1
+		bonuses["cha"] = 2
+	case "hill dwarf":
+		bonuses["con"] = 2
+		bonuses["wis"] = 1
+	}
+	
+	return bonuses
+}
+
+// Background represents a D&D 5e character background
+type Background struct {
+	Name string
+}
+
+// NewBackground creates a new Background instance
+func NewBackground(name string) *Background {
+	return &Background{Name: name}
+}
+
+// GetSkillProficiencies returns the skill proficiencies for this background according to D&D 5e rules
+func (b *Background) GetSkillProficiencies() []string {
+	backgroundSkills := map[string][]string{
+		"acolyte":       {"insight", "religion"},
+		"charlatan":     {"deception", "sleight of hand"},
+		"criminal":      {"deception", "stealth"},
+		"entertainer":   {"acrobatics", "performance"},
+		"folk hero":     {"animal handling", "survival"},
+		"guild artisan": {"insight", "persuasion"},
+		"hermit":        {"medicine", "religion"},
+		"noble":         {"history", "persuasion"},
+		"outlander":     {"athletics", "survival"},
+		"sage":          {"arcana", "history"},
+		"sailor":        {"athletics", "perception"},
+		"soldier":       {"athletics", "intimidation"},
+		"urchin":        {"sleight of hand", "stealth"},
+	}
+	
+	return backgroundSkills[strings.ToLower(b.Name)]
+}
+
+// Class represents a D&D 5e character class
+type Class struct {
+	Name string
+}
+
+// NewClass creates a new Class instance
+func NewClass(name string) *Class {
+	return &Class{Name: name}
+}
+
+// GetAvailableSkills returns the skills that this class can choose from according to D&D 5e rules
+func (cl *Class) GetAvailableSkills() []string {
+	classSkills := map[string][]string{
+		"barbarian": {"animal handling", "athletics", "intimidation", "nature", "perception", "survival"},
+		"bard":      {"acrobatics", "animal handling", "arcana", "athletics", "deception", "history", "insight", "intimidation", "investigation", "medicine", "nature", "perception", "performance", "persuasion", "religion", "sleight of hand", "stealth", "survival"},
+		"cleric":    {"history", "insight", "medicine", "persuasion", "religion"},
+		"druid":     {"arcana", "animal handling", "insight", "medicine", "nature", "perception", "religion", "survival"},
+		"fighter":   {"acrobatics", "animal handling", "athletics", "history", "insight", "intimidation", "perception", "survival"},
+		"monk":      {"acrobatics", "athletics", "history", "insight", "religion", "stealth"},
+		"paladin":   {"athletics", "insight", "intimidation", "medicine", "persuasion", "religion"},
+		"ranger":    {"animal handling", "athletics", "insight", "investigation", "nature", "perception", "stealth", "survival"},
+		"rogue":     {"acrobatics", "athletics", "deception", "insight", "intimidation", "investigation", "perception", "performance", "persuasion", "sleight of hand", "stealth"},
+		"sorcerer":  {"arcana", "deception", "insight", "intimidation", "persuasion", "religion"},
+		"warlock":   {"arcana", "deception", "history", "intimidation", "investigation", "nature", "religion"},
+		"wizard":    {"arcana", "history", "insight", "investigation", "medicine", "religion"},
+	}
+	
+	return classSkills[strings.ToLower(cl.Name)]
+}
+
+// GetSkillCount returns the number of skills this class can choose according to D&D 5e rules
+func (cl *Class) GetSkillCount() int {
+	classSkillCount := map[string]int{
+		"barbarian": 2,
+		"bard":      3,
+		"cleric":    2,
+		"druid":     2,
+		"fighter":   2,
+		"monk":      2,
+		"paladin":   2,
+		"ranger":    3,
+		"rogue":     4,
+		"sorcerer":  2,
+		"warlock":   2,
+		"wizard":    2,
+	}
+	
+	return classSkillCount[strings.ToLower(cl.Name)]
+}
+

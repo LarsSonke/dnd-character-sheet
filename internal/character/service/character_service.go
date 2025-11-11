@@ -1,7 +1,6 @@
 package service
 
 import (
-	"DnD-sheet/helpers"
 	"DnD-sheet/internal/character/domain"
 	"errors"
 	"fmt"
@@ -65,8 +64,15 @@ func (s *CharacterService) CreateCharacter(req CreateCharacterRequest) (*domain.
 		req.Background = "acolyte"
 	}
 
-	// Apply racial bonuses
-	req = s.applyRacialBonuses(req)
+	// Apply racial bonuses using domain logic
+	race := domain.NewRace(req.Race)
+	bonuses := race.GetAbilityBonuses()
+	req.Str += bonuses["str"]
+	req.Dex += bonuses["dex"]
+	req.Con += bonuses["con"]
+	req.Int += bonuses["int"]
+	req.Wis += bonuses["wis"]
+	req.Cha += bonuses["cha"]
 
 	// Automatically assign skill proficiencies based on D&D rules
 	skills := s.generateSkillProficiencies(req.Background, req.Class)
@@ -83,8 +89,8 @@ func (s *CharacterService) CreateCharacter(req CreateCharacterRequest) (*domain.
 		req.Background, skills,
 	)
 
-	// Assign spell slots based on class and level
-	c.SpellSlots = s.generateSpellSlots(req.Class, req.Level)
+	// Assign spell slots based on class and level using domain logic
+	c.SpellSlots = c.GetSpellSlots()
 
 	// Save character
 	if err := s.repo.Save(c); err != nil {
@@ -120,7 +126,7 @@ func (s *CharacterService) UpdateLevel(name string, newLevel int) error {
 	c.Level = newLevel
 	c.ProficiencyBonus = domain.ProficiencyBonus(newLevel)
 	c.ApplySRDAbilityScoreImprovements(oldLevel, newLevel)
-	c.SpellSlots = s.generateSpellSlots(c.Class, newLevel)
+	c.SpellSlots = c.GetSpellSlots()
 
 	return s.repo.Save(c)
 }
@@ -233,62 +239,23 @@ func (s *CharacterService) PrepareSpell(name, spell string) error {
 	return s.repo.Save(c)
 }
 
-// applyRacialBonuses applies racial ability score bonuses
-func (s *CharacterService) applyRacialBonuses(req CreateCharacterRequest) CreateCharacterRequest {
-	switch strings.ToLower(req.Race) {
-	case "dwarf":
-		req.Con += 2
-	case "elf":
-		req.Dex += 2
-	case "halfling":
-		req.Dex += 2
-	case "lightfoot halfling":
-		req.Dex += 2
-		req.Cha += 1
-	case "stout halfling":
-		req.Dex += 2
-		req.Con += 1
-	case "human":
-		req.Str += 1
-		req.Dex += 1
-		req.Con += 1
-		req.Int += 1
-		req.Wis += 1
-		req.Cha += 1
-	case "dragonborn":
-		req.Str += 2
-		req.Cha += 1
-	case "gnome":
-		req.Int += 2
-	case "half elf":
-		req.Cha += 2
-	case "half orc":
-		req.Str += 2
-		req.Con += 1
-	case "tiefling":
-		req.Int += 1
-		req.Cha += 2
-	case "hill dwarf":
-		req.Con += 2
-		req.Wis += 1
-	}
-	return req
-}
-
-// generateSkillProficiencies creates skill list based on background and class
+// generateSkillProficiencies creates skill list based on background and class using domain logic
 func (s *CharacterService) generateSkillProficiencies(background, class string) []string {
-	bgSkills := helpers.BackgroundSkillProficiencies[strings.ToLower(background)]
-	classSkills := helpers.ClassSkillProficiencies[strings.ToLower(class)]
+	bg := domain.NewBackground(background)
+	bgSkills := bg.GetSkillProficiencies()
+	
+	cl := domain.NewClass(class)
+	classSkills := cl.GetAvailableSkills()
+	nClassSkills := cl.GetSkillCount()
 
 	// Start with background skills
 	skillList := []string{}
 	skillList = append(skillList, bgSkills...)
 
 	// Add up to N class skills, even if they duplicate background skills
-	nClassSkills := helpers.ClassSkillCount[strings.ToLower(class)]
 	count := 0
-	for _, s := range classSkills {
-		skillList = append(skillList, s)
+	for _, skill := range classSkills {
+		skillList = append(skillList, skill)
 		count++
 		if count >= nClassSkills {
 			break
@@ -307,23 +274,6 @@ func (s *CharacterService) validateSkills(skills []string) error {
 		}
 	}
 	return nil
-}
-
-// generateSpellSlots creates spell slots based on class and level
-func (s *CharacterService) generateSpellSlots(class string, level int) map[int]int {
-	switch strings.ToLower(class) {
-	case "wizard", "cleric", "druid", "bard", "sorcerer":
-		slots := domain.FullCasterSpellSlots(level)
-		// Add cantrips (Level 0) for full casters
-		slots[0] = domain.FullCasterCantrips(level)
-		return slots
-	case "paladin", "ranger":
-		return domain.HalfCasterSpellSlots(level)
-	case "warlock":
-		return domain.PactMagicSpellSlots(level)
-	default:
-		return map[int]int{}
-	}
 }
 
 // IsStandardArray validates if ability scores use the standard array

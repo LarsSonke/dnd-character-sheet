@@ -3,7 +3,6 @@ package service
 import (
 	"DnD-sheet/internal/equipment/domain"
 	"errors"
-	"strings"
 )
 
 // EquipmentService handles equipment business logic
@@ -49,23 +48,7 @@ func (s *EquipmentService) CalculateArmorClass(armorName string, dexModifier int
 		return 10, err
 	}
 
-	ac := armor.ArmorClass.Base
-	if armor.ArmorClass.DexBonus {
-		// Some armor types limit dex bonus
-		switch strings.ToLower(armor.Category) {
-		case "medium armor":
-			if dexModifier > 2 {
-				dexModifier = 2
-			}
-			ac += dexModifier
-		case "light armor":
-			ac += dexModifier
-		case "heavy armor":
-			// No dex bonus for heavy armor
-		default:
-			ac += dexModifier
-		}
-	}
-
-	return ac, nil
+	// Use domain logic to calculate AC
+	return armor.CalculateAC(dexModifier), nil
 }
+
