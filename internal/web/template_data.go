@@ -130,10 +130,10 @@ func NewCharacterTemplateData(char *domain.Character) *CharacterTemplateData {
 		ChaMod: getAbilityModifier(char.Cha),
 
 		ProficiencyBonus:  char.ProficiencyBonus,
-		ArmorClass:        calculateArmorClass(char),
+		ArmorClass:        char.ArmorClass(),
 		Initiative:        calculateInitiative(char),
 		Speed:             30, // Default speed, could be race-dependent
-		PassivePerception: calculatePassivePerception(char),
+		PassivePerception: char.PassivePerception(),
 
 		// Equipment
 		Weapon:     char.Weapon,
@@ -259,91 +259,6 @@ func getAbilityModifier(abilityScore int) int {
 	return modifier
 }
 
-func calculateArmorClass(char *domain.Character) int {
-	baseAC := 10
-	dexMod := getAbilityModifier(char.Dex)
-
-	if char.Armor != "" {
-		switch strings.ToLower(char.Armor) {
-		case "padded", "padded armor":
-			baseAC = 11 + dexMod
-		case "leather", "leather armor":
-			baseAC = 11 + dexMod
-		case "studded leather", "studded leather armor":
-			baseAC = 12 + dexMod
-		case "hide", "hide armor":
-			baseAC = 12 + min(dexMod, 2)
-		case "chain shirt":
-			baseAC = 13 + min(dexMod, 2)
-		case "scale mail", "scale mail armor":
-			baseAC = 14 + min(dexMod, 2)
-		case "breastplate":
-			baseAC = 14 + min(dexMod, 2)
-		case "half plate", "half plate armor":
-			baseAC = 15 + min(dexMod, 2)
-		case "ring mail", "ring mail armor":
-			baseAC = 14
-		case "chain mail", "chain mail armor":
-			baseAC = 16
-		case "splint", "splint armor":
-			baseAC = 17
-		case "plate", "plate armor":
-			baseAC = 18
-		case "natural armor":
-			baseAC = 13 + dexMod
-		case "mage armor":
-			baseAC = 13 + dexMod
-		case "barkskin":
-			baseAC = max(16, 10+dexMod)
-		default:
-			armorLower := strings.ToLower(char.Armor)
-			if strings.Contains(armorLower, "leather") {
-				baseAC = 11 + dexMod
-			} else if strings.Contains(armorLower, "chain") || strings.Contains(armorLower, "mail") {
-				baseAC = 16
-			} else if strings.Contains(armorLower, "plate") {
-				baseAC = 18
-			} else {
-				baseAC = 11 + dexMod
-			}
-		}
-	} else {
-		classLower := strings.ToLower(char.Class)
-		switch classLower {
-		case "barbarian":
-			conMod := getAbilityModifier(char.Con)
-			baseAC = 10 + dexMod + conMod
-		case "monk":
-			wisMod := getAbilityModifier(char.Wis)
-			baseAC = 10 + dexMod + wisMod
-		case "sorcerer":
-			baseAC = max(13+dexMod, 10+dexMod)
-		default:
-			baseAC = 10 + dexMod
-		}
-	}
-
-	if char.Shield != "" {
-		shieldLower := strings.ToLower(char.Shield)
-		switch shieldLower {
-		case "shield":
-			baseAC += 2
-		case "buckler":
-			baseAC += 1
-		case "+1 shield", "shield +1":
-			baseAC += 3
-		case "+2 shield", "shield +2":
-			baseAC += 4
-		case "+3 shield", "shield +3":
-			baseAC += 5
-		default:
-			baseAC += 2
-		}
-	}
-
-	return baseAC
-}
-
 func calculateInitiative(char *domain.Character) int {
 	dexMod := getAbilityModifier(char.Dex)
 	initiative := dexMod
@@ -357,20 +272,6 @@ func calculateInitiative(char *domain.Character) int {
 	}
 
 	return initiative
-}
-
-func calculatePassivePerception(char *domain.Character) int {
-	wisMod := getAbilityModifier(char.Wis)
-	passivePerception := 10 + wisMod
-
-	for _, skill := range char.SkillProficiencies {
-		if strings.ToLower(skill) == "perception" {
-			passivePerception += char.ProficiencyBonus
-			break
-		}
-	}
-
-	return passivePerception
 }
 
 func calculateHitPoints(char *domain.Character) int {

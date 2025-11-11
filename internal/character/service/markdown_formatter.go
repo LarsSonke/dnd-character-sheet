@@ -30,13 +30,8 @@ func (f *MarkdownFormatter) FormatCharacter(char *domain.Character) string {
 	builder.WriteString(fmt.Sprintf("Level: %d\n", char.Level))
 	builder.WriteString(fmt.Sprintf("Proficiency bonus: +%d\n", char.ProficiencyBonus))
 
-	// Calculate passive perception
-	wisModifier := domain.Modifier(char.Wis)
-	passivePerception := 10 + wisModifier
-	if f.hasSkillProficiency(char.SkillProficiencies, "perception") {
-		passivePerception += char.ProficiencyBonus
-	}
-	builder.WriteString(fmt.Sprintf("Passive perception: %d\n\n", passivePerception))
+	// Use domain method for passive perception
+	builder.WriteString(fmt.Sprintf("Passive perception: %d\n\n", char.PassivePerception()))
 
 	// Ability scores
 	builder.WriteString("## Ability scores\n")
@@ -67,12 +62,11 @@ func (f *MarkdownFormatter) FormatCharacter(char *domain.Character) string {
 
 	// Combat stats
 	builder.WriteString("## Combat stats\n")
-	ac := f.calculateArmorClass(char)
-	builder.WriteString(fmt.Sprintf("Armor class: %d\n", ac))
+	builder.WriteString(fmt.Sprintf("Armor class: %d\n", char.ArmorClass()))
 	builder.WriteString(fmt.Sprintf("Initiative bonus: %s\n\n", f.formatModifier(domain.Modifier(char.Dex))))
 
 	// Spell slots (only for casters)
-	if f.isSpellcaster(char.Class) {
+	if char.IsSpellcaster() {
 		builder.WriteString("## Spell slots\n")
 		for level := 0; level <= 9; level++ {
 			if slots, exists := char.SpellSlots[level]; exists && slots > 0 {
@@ -83,15 +77,9 @@ func (f *MarkdownFormatter) FormatCharacter(char *domain.Character) string {
 
 		// Spellcasting
 		builder.WriteString("## Spellcasting\n")
-		spellAbility := f.getSpellcastingAbility(char.Class)
-		builder.WriteString(fmt.Sprintf("Spellcasting ability: %s\n", spellAbility))
-
-		spellMod := f.getSpellcastingModifier(char, spellAbility)
-		spellSaveDC := 8 + char.ProficiencyBonus + spellMod
-		spellAttackBonus := char.ProficiencyBonus + spellMod
-
-		builder.WriteString(fmt.Sprintf("Spell save DC: %d\n", spellSaveDC))
-		builder.WriteString(fmt.Sprintf("Spell attack bonus: +%d\n\n", spellAttackBonus))
+		builder.WriteString(fmt.Sprintf("Spellcasting ability: %s\n", char.SpellcastingAbility()))
+		builder.WriteString(fmt.Sprintf("Spell save DC: %d\n", char.SpellSaveDC()))
+		builder.WriteString(fmt.Sprintf("Spell attack bonus: +%d\n\n", char.SpellAttackBonus()))
 
 		// Spells
 		if len(char.PreparedSpells) > 0 {
@@ -142,77 +130,6 @@ func (f *MarkdownFormatter) hasSkillProficiency(proficiencies []string, skill st
 		}
 	}
 	return false
-}
-
-// calculateArmorClass calculates the character's AC
-func (f *MarkdownFormatter) calculateArmorClass(char *domain.Character) int {
-	baseAC := 10
-	dexMod := domain.Modifier(char.Dex)
-
-	// Base AC from armor
-	switch strings.ToLower(char.Armor) {
-	case "leather armor":
-		baseAC = 11 + dexMod
-	case "studded leather":
-		baseAC = 12 + dexMod
-	case "chain shirt":
-		baseAC = 13 + min(dexMod, 2)
-	case "scale mail":
-		baseAC = 14 + min(dexMod, 2)
-	case "chain mail":
-		baseAC = 16
-	case "plate":
-		baseAC = 18
-	default:
-		baseAC = 10 + dexMod
-	}
-
-	// Shield bonus
-	if char.Shield != "" {
-		baseAC += 2
-	}
-
-	return baseAC
-}
-
-// isSpellcaster checks if a class can cast spells
-func (f *MarkdownFormatter) isSpellcaster(class string) bool {
-	spellcasters := []string{"wizard", "sorcerer", "warlock", "bard", "cleric", "druid", "paladin", "ranger"}
-	class = strings.ToLower(class)
-	for _, caster := range spellcasters {
-		if class == caster {
-			return true
-		}
-	}
-	return false
-}
-
-// getSpellcastingAbility returns the spellcasting ability for a class
-func (f *MarkdownFormatter) getSpellcastingAbility(class string) string {
-	switch strings.ToLower(class) {
-	case "wizard":
-		return "intelligence"
-	case "sorcerer", "bard", "paladin", "warlock":
-		return "charisma"
-	case "cleric", "druid", "ranger":
-		return "wisdom"
-	default:
-		return "intelligence"
-	}
-}
-
-// getSpellcastingModifier returns the spellcasting modifier for a character
-func (f *MarkdownFormatter) getSpellcastingModifier(char *domain.Character, ability string) int {
-	switch strings.ToLower(ability) {
-	case "intelligence":
-		return domain.Modifier(char.Int)
-	case "wisdom":
-		return domain.Modifier(char.Wis)
-	case "charisma":
-		return domain.Modifier(char.Cha)
-	default:
-		return 0
-	}
 }
 
 // formatSpellsByLevel formats spells organized by level

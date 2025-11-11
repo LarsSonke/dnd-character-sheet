@@ -75,7 +75,7 @@ func TestMarkdownFormatter_FormatCharacter(t *testing.T) {
 				"Level 2: 3",
 				"Level 3: 2",
 				"## Spellcasting",
-				"Spellcasting ability: intelligence",
+				"Spellcasting ability: INT",
 				"Spell save DC: 14",      // 8 + 3 prof + 3 int mod
 				"Spell attack bonus: +6", // 3 prof + 3 int mod
 				"## Spells",
@@ -116,7 +116,7 @@ func TestMarkdownFormatter_FormatCharacter(t *testing.T) {
 			}
 
 			// Test that non-casters don't have spell sections
-			if !formatter.isSpellcaster(tt.char.Class) {
+			if !tt.char.IsSpellcaster() {
 				forbiddenSections := []string{"## Spell slots", "## Spellcasting", "## Spells"}
 				for _, section := range forbiddenSections {
 					if strings.Contains(output, section) {
@@ -153,8 +153,6 @@ func TestMarkdownFormatter_AbilityModifiers(t *testing.T) {
 }
 
 func TestMarkdownFormatter_ArmorClass(t *testing.T) {
-	formatter := NewMarkdownFormatter()
-
 	tests := []struct {
 		name     string
 		armor    string
@@ -177,7 +175,7 @@ func TestMarkdownFormatter_ArmorClass(t *testing.T) {
 				Dex:    tt.dex,
 			}
 
-			ac := formatter.calculateArmorClass(char)
+			ac := char.ArmorClass()
 			if ac != tt.expected {
 				t.Errorf("Expected AC %d, got %d for %s", tt.expected, ac, tt.name)
 			}
