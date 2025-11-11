@@ -131,7 +131,7 @@ func NewCharacterTemplateData(char *domain.Character) *CharacterTemplateData {
 
 		ProficiencyBonus:  char.ProficiencyBonus,
 		ArmorClass:        char.ArmorClass(),
-		Initiative:        calculateInitiative(char),
+		Initiative:        char.Initiative(),
 		Speed:             30, // Default speed, could be race-dependent
 		PassivePerception: char.PassivePerception(),
 
@@ -152,18 +152,27 @@ func NewCharacterTemplateData(char *domain.Character) *CharacterTemplateData {
 		KnownSpells:    char.KnownSpells,
 		PreparedSpells: char.PreparedSpells,
 
-		// Calculate HP (simplified - could be more complex based on class and con)
-		HitPointMax: calculateHitPoints(char),
-		CurrentHP:   calculateHitPoints(char), // Assume full HP for now
+		// Calculate HP
+		HitPointMax: char.MaxHitPoints(),
+		CurrentHP:   char.MaxHitPoints(), // Assume full HP for now
 	}
 
 	// Calculate spellcasting stats if applicable
-	if canCastSpells(char.Class) {
+	if char.IsSpellcaster() {
 		data.CanCastSpells = true
-		data.SpellcastingAbility = getSpellcastingAbility(char.Class)
-		data.SpellcastingModifier = getSpellcastingModifier(char, data.SpellcastingAbility)
-		data.SpellSaveDC = 8 + char.ProficiencyBonus + data.SpellcastingModifier
-		data.SpellAttackBonus = char.ProficiencyBonus + data.SpellcastingModifier
+		// Get ability name from domain (INT/WIS/CHA) and convert to full name
+		spellAbility := char.SpellcastingAbility()
+		switch spellAbility {
+		case "INT":
+			data.SpellcastingAbility = "Intelligence"
+		case "WIS":
+			data.SpellcastingAbility = "Wisdom"
+		case "CHA":
+			data.SpellcastingAbility = "Charisma"
+		}
+		data.SpellcastingModifier = char.SpellcastingModifier()
+		data.SpellSaveDC = char.SpellSaveDC()
+		data.SpellAttackBonus = char.SpellAttackBonus()
 	}
 
 	// Calculate saving throws
@@ -259,88 +268,6 @@ func getAbilityModifier(abilityScore int) int {
 	return modifier
 }
 
-func calculateInitiative(char *domain.Character) int {
-	dexMod := getAbilityModifier(char.Dex)
-	initiative := dexMod
-
-	classLower := strings.ToLower(char.Class)
-	switch classLower {
-	case "bard":
-		if char.Level >= 2 {
-			initiative += char.ProficiencyBonus / 2
-		}
-	}
-
-	return initiative
-}
-
-func calculateHitPoints(char *domain.Character) int {
-	conMod := getAbilityModifier(char.Con)
-	baseHP := conMod
-
-	// Class hit die (simplified)
-	classLower := strings.ToLower(char.Class)
-	switch classLower {
-	case "barbarian":
-		baseHP += 12 + (char.Level-1)*7 // d12 hit die, average 7
-	case "fighter", "paladin", "ranger":
-		baseHP += 10 + (char.Level-1)*6 // d10 hit die, average 6
-	case "bard", "cleric", "druid", "monk", "rogue", "warlock":
-		baseHP += 8 + (char.Level-1)*5 // d8 hit die, average 5
-	case "artificer", "sorcerer", "wizard":
-		baseHP += 6 + (char.Level-1)*4 // d6 hit die, average 4
-	default:
-		baseHP += 8 + (char.Level-1)*5 // Default d8
-	}
-
-	// Add constitution modifier for each level
-	baseHP += conMod * char.Level
-
-	return baseHP
-}
-
-func canCastSpells(class string) bool {
-	spellcastingClasses := []string{
-		"wizard", "sorcerer", "warlock", "cleric", "druid", "paladin", "ranger",
-		"bard", "artificer", "eldritch knight", "arcane trickster",
-	}
-
-	classLower := strings.ToLower(class)
-	for _, spellClass := range spellcastingClasses {
-		if classLower == spellClass {
-			return true
-		}
-	}
-	return false
-}
-
-func getSpellcastingAbility(class string) string {
-	classLower := strings.ToLower(class)
-	switch classLower {
-	case "wizard", "eldritch knight", "arcane trickster", "artificer":
-		return "Intelligence"
-	case "cleric", "druid", "ranger":
-		return "Wisdom"
-	case "sorcerer", "bard", "warlock", "paladin":
-		return "Charisma"
-	default:
-		return "Intelligence"
-	}
-}
-
-func getSpellcastingModifier(char *domain.Character, ability string) int {
-	switch strings.ToLower(ability) {
-	case "intelligence":
-		return getAbilityModifier(char.Int)
-	case "wisdom":
-		return getAbilityModifier(char.Wis)
-	case "charisma":
-		return getAbilityModifier(char.Cha)
-	default:
-		return 0
-	}
-}
-
 func min(a, b int) int {
 	if a < b {
 		return a
@@ -426,10 +353,10 @@ func calculateWeaponAttacks(char *domain.Character) []WeaponAttack {
 	attacks = append(attacks, attack)
 
 	// Add spell attacks if character can cast spells
-	if canCastSpells(char.Class) {
+	if char.IsSpellcaster() {
 		spellAttack := WeaponAttack{
 			Name:        "Spell Attack",
-			AttackBonus: char.ProficiencyBonus + getSpellcastingModifier(char, getSpellcastingAbility(char.Class)),
+			AttackBonus: char.SpellAttackBonus(),
 			Damage:      "Varies",
 			DamageType:  "Varies",
 			Range:       "Varies",

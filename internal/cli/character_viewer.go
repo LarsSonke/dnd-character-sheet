@@ -55,15 +55,24 @@ func (c *ViewCommand) printCharacterInfo(char *domain.Character) {
 		}
 
 		// Print spellcasting stats if character can cast spells
-		if c.canCastSpells(char.Class) {
-			spellcastingAbility := c.getSpellcastingAbility(char.Class)
-			spellcastingMod := c.getSpellcastingModifier(char, spellcastingAbility)
-			spellSaveDC := 8 + char.ProficiencyBonus + spellcastingMod
-			spellAttackBonus := char.ProficiencyBonus + spellcastingMod
-
-			fmt.Printf("Spellcasting ability: %s\n", spellcastingAbility)
-			fmt.Printf("Spell save DC: %d\n", spellSaveDC)
-			fmt.Printf("Spell attack bonus: +%d\n", spellAttackBonus)
+		if char.IsSpellcaster() {
+			spellAbility := char.SpellcastingAbility()
+			// Convert INT/WIS/CHA to full name for display
+			var abilityName string
+			switch spellAbility {
+			case "INT":
+				abilityName = "intelligence"
+			case "WIS":
+				abilityName = "wisdom"
+			case "CHA":
+				abilityName = "charisma"
+			default:
+				abilityName = "intelligence"
+			}
+			
+			fmt.Printf("Spellcasting ability: %s\n", abilityName)
+			fmt.Printf("Spell save DC: %d\n", char.SpellSaveDC())
+			fmt.Printf("Spell attack bonus: +%d\n", char.SpellAttackBonus())
 		}
 	}
 
@@ -86,7 +95,7 @@ func (c *ViewCommand) printCharacterInfo(char *domain.Character) {
 
 	// Print calculated stats
 	fmt.Printf("Armor class: %d\n", char.ArmorClass())
-	fmt.Printf("Initiative bonus: %d\n", c.calculateInitiative(char))
+	fmt.Printf("Initiative bonus: %d\n", char.Initiative())
 	fmt.Printf("Passive perception: %d\n", char.PassivePerception())
 }
 
@@ -108,29 +117,6 @@ func max(a, b int) int {
 		return a
 	}
 	return b
-} // calculateInitiative calculates initiative bonus (Dex mod + potential class bonuses)
-func (c *ViewCommand) calculateInitiative(char *domain.Character) int {
-	dexMod := c.getAbilityModifier(char.Dex)
-	initiative := dexMod
-
-	// Class-specific initiative bonuses
-	classLower := strings.ToLower(char.Class)
-	switch classLower {
-	case "rogue":
-		// Some rogue subclasses get initiative bonuses, but we'll keep it simple
-		// Could add half proficiency bonus for certain levels
-	case "barbarian":
-		// Feral Instinct at higher levels, but keeping simple
-	case "bard":
-		// Jack of All Trades adds half proficiency to initiative (simplified)
-		if char.Level >= 2 {
-			initiative += char.ProficiencyBonus / 2
-		}
-	}
-
-	// Alert feat would add +5, but we don't track feats yet
-
-	return initiative
 }
 
 // min returns the minimum of two integers
@@ -139,49 +125,4 @@ func min(a, b int) int {
 		return a
 	}
 	return b
-}
-
-// canCastSpells returns true if the given class can cast spells
-func (c *ViewCommand) canCastSpells(class string) bool {
-	spellcastingClasses := []string{
-		"wizard", "sorcerer", "warlock", "cleric", "druid", "paladin", "ranger",
-		"bard", "artificer", "eldritch knight", "arcane trickster",
-	}
-
-	classLower := strings.ToLower(class)
-	for _, spellClass := range spellcastingClasses {
-		if classLower == spellClass {
-			return true
-		}
-	}
-	return false
-}
-
-// getSpellcastingAbility returns the spellcasting ability for a class
-func (c *ViewCommand) getSpellcastingAbility(class string) string {
-	classLower := strings.ToLower(class)
-	switch classLower {
-	case "wizard", "eldritch knight", "arcane trickster", "artificer":
-		return "intelligence"
-	case "cleric", "druid", "ranger":
-		return "wisdom"
-	case "sorcerer", "bard", "warlock", "paladin":
-		return "charisma"
-	default:
-		return "intelligence" // Default
-	}
-}
-
-// getSpellcastingModifier returns the spellcasting modifier for a character
-func (c *ViewCommand) getSpellcastingModifier(char *domain.Character, ability string) int {
-	switch strings.ToLower(ability) {
-	case "intelligence":
-		return c.getAbilityModifier(char.Int)
-	case "wisdom":
-		return c.getAbilityModifier(char.Wis)
-	case "charisma":
-		return c.getAbilityModifier(char.Cha)
-	default:
-		return 0
-	}
 }

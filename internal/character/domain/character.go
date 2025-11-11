@@ -109,7 +109,7 @@ func (c *Character) ArmorClass() int {
 func (c *Character) PassivePerception() int {
 	wisModifier := Modifier(c.Wis)
 	passive := 10 + wisModifier
-	
+
 	// Check if proficient in perception
 	for _, skill := range c.SkillProficiencies {
 		if skill == "perception" || skill == "Perception" {
@@ -117,7 +117,7 @@ func (c *Character) PassivePerception() int {
 			break
 		}
 	}
-	
+
 	return passive
 }
 
@@ -168,14 +168,75 @@ func (c *Character) SpellAttackBonus() int {
 // IsSpellcaster checks if the character's class can cast spells
 func (c *Character) IsSpellcaster() bool {
 	spellcasters := map[string]bool{
-		"wizard":   true,
-		"sorcerer": true,
-		"warlock":  true,
-		"bard":     true,
-		"cleric":   true,
-		"druid":    true,
-		"paladin":  true,
-		"ranger":   true,
+		"wizard":           true,
+		"sorcerer":         true,
+		"warlock":          true,
+		"bard":             true,
+		"cleric":           true,
+		"druid":            true,
+		"paladin":          true,
+		"ranger":           true,
+		"artificer":        true,
+		"eldritch knight":  true,
+		"arcane trickster": true,
 	}
-	return spellcasters[c.Class] || spellcasters[strings.ToLower(c.Class)]
+	classLower := strings.ToLower(c.Class)
+	return spellcasters[classLower]
+}
+
+// Initiative calculates initiative bonus (Dex modifier + class bonuses)
+// D&D 5e rule: Initiative = Dex modifier, with class-specific bonuses
+func (c *Character) Initiative() int {
+	initiative := Modifier(c.Dex)
+
+	// Class-specific initiative bonuses (D&D 5e rules)
+	classLower := strings.ToLower(c.Class)
+	switch classLower {
+	case "bard":
+		// Jack of All Trades: add half proficiency to initiative (from level 2)
+		if c.Level >= 2 {
+			initiative += c.ProficiencyBonus / 2
+		}
+	// Future: could add other class features like Feral Instinct for Barbarian
+	}
+
+	return initiative
+}
+
+// MaxHitPoints calculates maximum hit points based on class and level
+// D&D 5e rule: Class hit die + Con modifier per level
+func (c *Character) MaxHitPoints() int {
+	conMod := Modifier(c.Con)
+
+	// Class hit dice (D&D 5e rules)
+	classLower := strings.ToLower(c.Class)
+	var baseHP int
+
+	switch classLower {
+	case "barbarian":
+		// d12 hit die: max at 1st level, average (7) afterwards
+		baseHP = 12 + (c.Level-1)*7
+	case "fighter", "paladin", "ranger":
+		// d10 hit die: max at 1st level, average (6) afterwards
+		baseHP = 10 + (c.Level-1)*6
+	case "bard", "cleric", "druid", "monk", "rogue", "warlock":
+		// d8 hit die: max at 1st level, average (5) afterwards
+		baseHP = 8 + (c.Level-1)*5
+	case "artificer", "sorcerer", "wizard":
+		// d6 hit die: max at 1st level, average (4) afterwards
+		baseHP = 6 + (c.Level-1)*4
+	default:
+		// Default to d8 if class unknown
+		baseHP = 8 + (c.Level-1)*5
+	}
+
+	// Add Constitution modifier for each level
+	totalHP := baseHP + (conMod * c.Level)
+
+	// Minimum 1 HP per level
+	if totalHP < c.Level {
+		totalHP = c.Level
+	}
+
+	return totalHP
 }

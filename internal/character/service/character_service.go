@@ -177,7 +177,7 @@ func (s *CharacterService) LearnSpell(name, spell string) error {
 	}
 
 	// Check if class can cast spells
-	if !s.canCastSpells(c.Class) {
+	if !c.IsSpellcaster() {
 		return errors.New("this class can't cast spells")
 	}
 
@@ -205,7 +205,7 @@ func (s *CharacterService) PrepareSpell(name, spell string) error {
 	}
 
 	// Check if class can cast spells
-	if !s.canCastSpells(c.Class) {
+	if !c.IsSpellcaster() {
 		return errors.New("this class can't cast spells")
 	}
 
@@ -347,22 +347,6 @@ func (s *CharacterService) IsStandardArray(str, dex, con, int_, wis, cha int) bo
 	return true
 }
 
-// canCastSpells returns true if the given class can cast spells
-func (s *CharacterService) canCastSpells(class string) bool {
-	spellcastingClasses := []string{
-		"wizard", "sorcerer", "warlock", "cleric", "druid", "paladin", "ranger",
-		"bard", "artificer", "eldritch knight", "arcane trickster",
-	}
-
-	classLower := strings.ToLower(class)
-	for _, spellClass := range spellcastingClasses {
-		if classLower == spellClass {
-			return true
-		}
-	}
-	return false
-}
-
 // isPreparedCaster returns true if the class prepares spells (vs learning them)
 func (s *CharacterService) isPreparedCaster(class string) bool {
 	// Known caster classes that can learn spells
@@ -378,8 +362,9 @@ func (s *CharacterService) isPreparedCaster(class string) bool {
 		}
 	}
 
-	// All other spellcasters are prepared casters (including wizard)
-	return s.canCastSpells(class)
+	// Create temporary character to check if it can cast spells
+	tempChar := &domain.Character{Class: class}
+	return tempChar.IsSpellcaster()
 }
 
 // getSpellLevel returns the spell level for common D&D spells
