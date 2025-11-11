@@ -2,6 +2,7 @@ package service
 
 import (
 	"DnD-sheet/internal/character/domain"
+	"DnD-sheet/internal/spell"
 	"errors"
 	"fmt"
 	"sort"
@@ -188,7 +189,7 @@ func (s *CharacterService) LearnSpell(name, spell string) error {
 	}
 
 	// Check if this is a prepared caster (they can't learn spells, only prepare them)
-	if s.isPreparedCaster(c.Class) {
+	if c.IsPreparedCaster() {
 		return errors.New("this class prepares spells and can't learn them")
 	}
 
@@ -204,7 +205,7 @@ func (s *CharacterService) LearnSpell(name, spell string) error {
 }
 
 // PrepareSpell adds a spell to a character's prepared spells
-func (s *CharacterService) PrepareSpell(name, spell string) error {
+func (s *CharacterService) PrepareSpell(name, spellName string) error {
 	c, err := s.repo.Load(name)
 	if err != nil {
 		return err
@@ -216,12 +217,12 @@ func (s *CharacterService) PrepareSpell(name, spell string) error {
 	}
 
 	// Check if this is a known caster (they can't prepare spells, only learn them)
-	if !s.isPreparedCaster(c.Class) {
+	if !c.IsPreparedCaster() {
 		return errors.New("this class learns spells and can't prepare them")
 	}
 
 	// Check if character has spell slots for this spell level
-	spellLevel := s.getSpellLevel(spell)
+	spellLevel := spell.GetSpellLevel(spellName)
 	if spellLevel > 0 { // Only check for leveled spells (not cantrips)
 		if slots, hasSlots := c.SpellSlots[spellLevel]; !hasSlots || slots == 0 {
 			return errors.New("the spell has higher level than the available spell slots")
@@ -230,12 +231,12 @@ func (s *CharacterService) PrepareSpell(name, spell string) error {
 
 	// Check if spell is already prepared
 	for _, preparedSpell := range c.PreparedSpells {
-		if strings.EqualFold(preparedSpell, spell) {
+		if strings.EqualFold(preparedSpell, spellName) {
 			return errors.New("spell already prepared")
 		}
 	}
 
-	c.PreparedSpells = append(c.PreparedSpells, spell)
+	c.PreparedSpells = append(c.PreparedSpells, spellName)
 	return s.repo.Save(c)
 }
 
@@ -243,7 +244,7 @@ func (s *CharacterService) PrepareSpell(name, spell string) error {
 func (s *CharacterService) generateSkillProficiencies(background, class string) []string {
 	bg := domain.NewBackground(background)
 	bgSkills := bg.GetSkillProficiencies()
-	
+
 	cl := domain.NewClass(class)
 	classSkills := cl.GetAvailableSkills()
 	nClassSkills := cl.GetSkillCount()
@@ -295,67 +296,4 @@ func (s *CharacterService) IsStandardArray(str, dex, con, int_, wis, cha int) bo
 		}
 	}
 	return true
-}
-
-// isPreparedCaster returns true if the class prepares spells (vs learning them)
-func (s *CharacterService) isPreparedCaster(class string) bool {
-	// Known caster classes that can learn spells
-	knownClasses := []string{
-		"sorcerer", "warlock", "bard", "eldritch knight", "arcane trickster",
-	}
-
-	classLower := strings.ToLower(class)
-	// If it's a known caster, it's NOT a prepared caster
-	for _, knownClass := range knownClasses {
-		if classLower == knownClass {
-			return false
-		}
-	}
-
-	// Create temporary character to check if it can cast spells
-	tempChar := &domain.Character{Class: class}
-	return tempChar.IsSpellcaster()
-}
-
-// getSpellLevel returns the spell level for common D&D spells
-func (s *CharacterService) getSpellLevel(spell string) int {
-	spellLevels := map[string]int{
-		// Cantrips (Level 0)
-		"fire bolt": 0, "mage hand": 0, "prestidigitation": 0, "light": 0,
-
-		// Level 1 spells
-		"burning hands": 1, "magic missile": 1, "cure wounds": 1, "shield": 1, "false life": 1, "feather fall": 1,
-
-		// Level 2 spells
-		"scorching ray": 2, "misty step": 2, "web": 2, "hold person": 2,
-
-		// Level 3 spells
-		"fireball": 3, "lightning bolt": 3, "counterspell": 3, "fly": 3,
-
-		// Level 4 spells
-		"wall of fire": 4, "dimension door": 4, "polymorph": 4,
-
-		// Level 5 spells
-		"cone of cold": 5, "teleport": 5, "wall of stone": 5,
-
-		// Level 6 spells
-		"disintegrate": 6, "mass suggestion": 6, "wall of ice": 6,
-
-		// Level 7 spells
-		"etherealness": 7, "fire storm": 7, "plane shift": 7,
-
-		// Level 8 spells
-		"power word stun": 8, "maze": 8, "sunburst": 8,
-
-		// Level 9 spells
-		"wish": 9, "meteor swarm": 9, "time stop": 9,
-	}
-
-	spellLower := strings.ToLower(spell)
-	if level, exists := spellLevels[spellLower]; exists {
-		return level
-	}
-
-	// Default to level 1 for unknown spells to be safe
-	return 1
 }

@@ -2,6 +2,7 @@ package service
 
 import (
 	"DnD-sheet/internal/character/domain"
+	"DnD-sheet/internal/spell"
 	"fmt"
 	"sort"
 	"strings"
@@ -142,9 +143,9 @@ func (f *MarkdownFormatter) formatSpellsByLevel(spells []string) string {
 	// In a real implementation, you'd look this up from a spell database
 	spellLevels := make(map[int][]string)
 
-	for _, spell := range spells {
-		level := f.getSpellLevel(spell)
-		spellLevels[level] = append(spellLevels[level], spell)
+	for _, spellName := range spells {
+		level := spell.GetSpellLevel(spellName)
+		spellLevels[level] = append(spellLevels[level], spellName)
 	}
 
 	var builder strings.Builder
@@ -166,20 +167,6 @@ func (f *MarkdownFormatter) formatSpellsByLevel(spells []string) string {
 	}
 
 	return builder.String()
-}
-
-// getSpellLevel returns the level of a spell (simplified heuristic)
-func (f *MarkdownFormatter) getSpellLevel(spell string) int {
-	// Simple heuristic based on spell names from the example
-	spell = strings.ToLower(spell)
-	switch spell {
-	case "command":
-		return 1
-	case "beacon of hope":
-		return 3
-	default:
-		return 1 // Default to level 1
-	}
 }
 
 // min returns the minimum of two integers

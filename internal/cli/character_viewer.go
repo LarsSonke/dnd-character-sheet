@@ -99,18 +99,6 @@ func (c *ViewCommand) printCharacterInfo(char *domain.Character) {
 	fmt.Printf("Passive perception: %d\n", char.PassivePerception())
 }
 
-// Helper methods for calculating character stats
-
-// getAbilityModifier calculates the ability modifier from an ability score
-func (c *ViewCommand) getAbilityModifier(abilityScore int) int {
-	modifier := (abilityScore - 10) / 2
-	// Handle negative modifiers correctly (D&D rounds down, not towards zero)
-	if abilityScore < 10 && (abilityScore-10)%2 != 0 {
-		modifier-- // Round down for odd negative numbers
-	}
-	return modifier
-}
-
 // max returns the maximum of two integers
 func max(a, b int) int {
 	if a > b {

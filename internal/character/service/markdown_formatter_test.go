@@ -2,6 +2,7 @@ package service
 
 import (
 	"DnD-sheet/internal/character/domain"
+	"DnD-sheet/internal/spell"
 	"strings"
 	"testing"
 )
@@ -184,8 +185,6 @@ func TestMarkdownFormatter_ArmorClass(t *testing.T) {
 }
 
 func TestMarkdownFormatter_SpellLevels(t *testing.T) {
-	formatter := NewMarkdownFormatter()
-
 	tests := []struct {
 		spell    string
 		expected int
@@ -196,7 +195,7 @@ func TestMarkdownFormatter_SpellLevels(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		level := formatter.getSpellLevel(tt.spell)
+		level := spell.GetSpellLevel(tt.spell)
 		if level != tt.expected {
 			t.Errorf("Expected spell %q to be level %d, got %d", tt.spell, tt.expected, level)
 		}

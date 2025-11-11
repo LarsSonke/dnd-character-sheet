@@ -31,7 +31,7 @@ type EquipmentRepository interface {
 // CalculateAC calculates the armor class with dexterity modifier according to D&D 5e armor rules
 func (e *Equipment) CalculateAC(dexModifier int) int {
 	ac := e.ArmorClass.Base
-	
+
 	if e.ArmorClass.DexBonus {
 		// Apply dex bonus based on armor category (D&D 5e rules)
 		switch strings.ToLower(e.Category) {
@@ -52,7 +52,6 @@ func (e *Equipment) CalculateAC(dexModifier int) int {
 			ac += dexModifier
 		}
 	}
-	
+
 	return ac
 }
-

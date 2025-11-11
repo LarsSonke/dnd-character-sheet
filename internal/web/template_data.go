@@ -121,13 +121,13 @@ func NewCharacterTemplateData(char *domain.Character) *CharacterTemplateData {
 		Wis:        char.Wis,
 		Cha:        char.Cha,
 
-		// Calculate ability modifiers
-		StrMod: getAbilityModifier(char.Str),
-		DexMod: getAbilityModifier(char.Dex),
-		ConMod: getAbilityModifier(char.Con),
-		IntMod: getAbilityModifier(char.Int),
-		WisMod: getAbilityModifier(char.Wis),
-		ChaMod: getAbilityModifier(char.Cha),
+		// Calculate ability modifiers using domain logic
+		StrMod: domain.Modifier(char.Str),
+		DexMod: domain.Modifier(char.Dex),
+		ConMod: domain.Modifier(char.Con),
+		IntMod: domain.Modifier(char.Int),
+		WisMod: domain.Modifier(char.Wis),
+		ChaMod: domain.Modifier(char.Cha),
 
 		ProficiencyBonus:  char.ProficiencyBonus,
 		ArmorClass:        char.ArmorClass(),
@@ -258,16 +258,6 @@ func (data *CharacterTemplateData) calculateSkillModifiers(char *domain.Characte
 	}
 }
 
-// Helper functions (copied from character_viewer.go for consistency)
-
-func getAbilityModifier(abilityScore int) int {
-	modifier := (abilityScore - 10) / 2
-	if abilityScore < 10 && (abilityScore-10)%2 != 0 {
-		modifier--
-	}
-	return modifier
-}
-
 func min(a, b int) int {
 	if a < b {
 		return a
@@ -291,9 +281,9 @@ func calculateWeaponAttacks(char *domain.Character) []WeaponAttack {
 		return attacks
 	}
 
-	// Calculate base attack bonuses
-	strMod := getAbilityModifier(char.Str)
-	dexMod := getAbilityModifier(char.Dex)
+	// Calculate base attack bonuses using domain logic
+	strMod := domain.Modifier(char.Str)
+	dexMod := domain.Modifier(char.Dex)
 
 	// Try to enrich weapon with API data (simplified for now)
 	attack := WeaponAttack{

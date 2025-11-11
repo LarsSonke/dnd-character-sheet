@@ -184,11 +184,34 @@ func (c *Character) IsSpellcaster() bool {
 	return spellcasters[classLower]
 }
 
+// IsPreparedCaster returns true if the class prepares spells (vs learning them)
+// D&D 5e rule: Some classes learn spells permanently, others prepare daily
+func (c *Character) IsPreparedCaster() bool {
+	// Known caster classes that learn spells permanently
+	knownCasters := map[string]bool{
+		"sorcerer":         true,
+		"warlock":          true,
+		"bard":             true,
+		"eldritch knight":  true,
+		"arcane trickster": true,
+		"ranger":           true, // Rangers know spells in 5e
+	}
+	
+	classLower := strings.ToLower(c.Class)
+	// If it's a known caster, it's NOT a prepared caster
+	if knownCasters[classLower] {
+		return false
+	}
+	
+	// If it's a spellcaster but not a known caster, it's a prepared caster
+	return c.IsSpellcaster()
+}
+
 // GetSpellSlots returns spell slots for the character based on class and level
 // D&D 5e rule: Different classes have different spell slot progressions
 func (c *Character) GetSpellSlots() map[int]int {
 	classLower := strings.ToLower(c.Class)
-	
+
 	switch classLower {
 	case "wizard", "cleric", "druid", "bard", "sorcerer":
 		slots := FullCasterSpellSlots(c.Level)
@@ -274,7 +297,7 @@ func NewRace(name string) *Race {
 // GetAbilityBonuses returns the ability score bonuses for this race according to D&D 5e rules
 func (r *Race) GetAbilityBonuses() map[string]int {
 	bonuses := make(map[string]int)
-	
+
 	switch strings.ToLower(r.Name) {
 	case "dwarf":
 		bonuses["con"] = 2
@@ -312,7 +335,7 @@ func (r *Race) GetAbilityBonuses() map[string]int {
 		bonuses["con"] = 2
 		bonuses["wis"] = 1
 	}
-	
+
 	return bonuses
 }
 
@@ -343,7 +366,7 @@ func (b *Background) GetSkillProficiencies() []string {
 		"soldier":       {"athletics", "intimidation"},
 		"urchin":        {"sleight of hand", "stealth"},
 	}
-	
+
 	return backgroundSkills[strings.ToLower(b.Name)]
 }
 
@@ -373,7 +396,7 @@ func (cl *Class) GetAvailableSkills() []string {
 		"warlock":   {"arcana", "deception", "history", "intimidation", "investigation", "nature", "religion"},
 		"wizard":    {"arcana", "history", "insight", "investigation", "medicine", "religion"},
 	}
-	
+
 	return classSkills[strings.ToLower(cl.Name)]
 }
 
@@ -393,7 +416,6 @@ func (cl *Class) GetSkillCount() int {
 		"warlock":   2,
 		"wizard":    2,
 	}
-	
+
 	return classSkillCount[strings.ToLower(cl.Name)]
 }
-

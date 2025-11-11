@@ -51,4 +51,3 @@ func (s *EquipmentService) CalculateArmorClass(armorName string, dexModifier int
 	// Use domain logic to calculate AC
 	return armor.CalculateAC(dexModifier), nil
 }
-
