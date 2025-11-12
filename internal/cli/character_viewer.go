@@ -74,6 +74,22 @@ func (c *ViewCommand) printCharacterInfo(char *domain.Character) {
 			fmt.Printf("Spell save DC: %d\n", char.SpellSaveDC())
 			fmt.Printf("Spell attack bonus: +%d\n", char.SpellAttackBonus())
 		}
+		
+		// Print known spells if the character has any
+		if len(char.KnownSpells) > 0 {
+			fmt.Println("Known spells:")
+			for _, spell := range char.KnownSpells {
+				fmt.Printf("  - %s\n", spell)
+			}
+		}
+		
+		// Print prepared spells if the character has any
+		if len(char.PreparedSpells) > 0 {
+			fmt.Println("Prepared spells:")
+			for _, spell := range char.PreparedSpells {
+				fmt.Printf("  - %s\n", spell)
+			}
+		}
 	}
 
 	// Print equipment information

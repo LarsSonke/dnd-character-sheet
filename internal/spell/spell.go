@@ -115,4 +115,3 @@ func GetSpellLevel(spellName string) int {
 	// Default to level 1 for unknown spells to be safe
 	return 1
 }
-

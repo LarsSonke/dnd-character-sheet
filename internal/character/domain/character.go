@@ -196,13 +196,13 @@ func (c *Character) IsPreparedCaster() bool {
 		"arcane trickster": true,
 		"ranger":           true, // Rangers know spells in 5e
 	}
-	
+
 	classLower := strings.ToLower(c.Class)
 	// If it's a known caster, it's NOT a prepared caster
 	if knownCasters[classLower] {
 		return false
 	}
-	
+
 	// If it's a spellcaster but not a known caster, it's a prepared caster
 	return c.IsSpellcaster()
 }
